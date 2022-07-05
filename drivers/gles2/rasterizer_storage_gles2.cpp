@@ -613,7 +613,7 @@ void RasterizerStorageGLES2::texture_allocate(RID p_texture, int p_width, int p_
 	texture->active = true;
 }
 
-void RasterizerStorageGLES2::texture_set_data_raw(RID p_texture, const PoolByteArray& data, int offset) {
+void RasterizerStorageGLES2::texture_set_data_raw(RID p_texture, const PoolByteArray& data, int offset, int p_layer) {
 	Texture *texture = texture_owner.get(p_texture);
 
 	ERR_FAIL_COND(!texture);
@@ -664,7 +664,11 @@ void RasterizerStorageGLES2::texture_set_data_raw(RID p_texture, const PoolByteA
 
 	PoolByteArray::Read read = data.read();
 
-	glTexSubImage2D(texture->target, 0, 0, 0, w, h, format, type, read.ptr() + offset);
+	if (texture->type == VS::TEXTURE_TYPE_2D || texture->type == VS::TEXTURE_TYPE_CUBEMAP) {
+		glTexSubImage2D(texture->target, 0, 0, 0, w, h, format, type, read.ptr() + offset);
+	} else {
+		ERR_FAIL_MSG("Operation not supported for GLES2 backend");
+	}
 }
 
 void RasterizerStorageGLES2::texture_set_data(RID p_texture, const Ref<Image> &p_image, int p_layer) {

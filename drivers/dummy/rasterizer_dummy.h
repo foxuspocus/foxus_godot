@@ -169,7 +169,7 @@ public:
 		t->image->create(p_width, p_height, false, p_format);
 	}
 
-	void texture_set_data_raw(RID p_texture, const PoolByteArray& data, int offset = 0) {
+	void texture_set_data_raw(RID p_texture, const PoolByteArray& data, int offset = 0, int p_layer = 0) {
 
 	}
 

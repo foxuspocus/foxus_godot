@@ -508,6 +508,7 @@ public:
 
 	void create(uint32_t p_width, uint32_t p_height, uint32_t p_depth, Image::Format p_format, uint32_t p_flags = FLAGS_DEFAULT_TEXTURE_ARRAY);
 	void set_layer_data(const Ref<Image> &p_image, int p_layer);
+	void set_layer_data_raw(const PoolByteArray& p_data, int p_offset, int p_layer);
 	Ref<Image> get_layer_data(int p_layer) const;
 	void set_data_partial(const Ref<Image> &p_image, int p_x_ofs, int p_y_ofs, int p_z, int p_mipmap = 0);
 
