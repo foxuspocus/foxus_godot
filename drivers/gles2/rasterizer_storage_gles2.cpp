@@ -630,32 +630,16 @@ void RasterizerStorageGLES2::texture_set_data_raw(RID p_texture, const PoolByteA
 
 	switch (texture->format) {
 		case Image::FORMAT_L8: {
-#ifdef GLES_OVER_GL
-			format = GL_RED;
-			type = GL_UNSIGNED_BYTE;
-#else
 			format = GL_LUMINANCE;
 			type = GL_UNSIGNED_BYTE;
-#endif
 		} break;
 		case Image::FORMAT_LA8: {
-#ifdef GLES_OVER_GL
-			format = GL_RG;
-			type = GL_UNSIGNED_BYTE;
-#else
 			format = GL_LUMINANCE_ALPHA;
 			type = GL_UNSIGNED_BYTE;
-#endif
 		} break;
 		case Image::FORMAT_R8: {
-			format = GL_RED;
+			format = GL_ALPHA;
 			type = GL_UNSIGNED_BYTE;
-
-		} break;
-		case Image::FORMAT_RG8: {
-			format = GL_RG;
-			type = GL_UNSIGNED_BYTE;
-
 		} break;
 		case Image::FORMAT_RGB8: {
 			format = GL_RGB;
@@ -672,42 +656,6 @@ void RasterizerStorageGLES2::texture_set_data_raw(RID p_texture, const PoolByteA
 		case Image::FORMAT_RGBA5551: {
 			format = GL_RGBA;
 			type = GL_UNSIGNED_SHORT_5_5_5_1;
-		} break;
-		case Image::FORMAT_RF: {
-			format = GL_RED;
-			type = GL_FLOAT;
-		} break;
-		case Image::FORMAT_RGF: {
-			format = GL_RG;
-			type = GL_FLOAT;
-		} break;
-		case Image::FORMAT_RGBF: {
-			format = GL_RGB;
-			type = GL_FLOAT;
-		} break;
-		case Image::FORMAT_RGBAF: {
-			format = GL_RGBA;
-			type = GL_FLOAT;
-		} break;
-		case Image::FORMAT_RH: {
-			format = GL_RED;
-			type = GL_HALF_FLOAT;
-		} break;
-		case Image::FORMAT_RGH: {
-			format = GL_RG;
-			type = GL_HALF_FLOAT;
-		} break;
-		case Image::FORMAT_RGBH: {
-			format = GL_RGB;
-			type = GL_HALF_FLOAT;
-		} break;
-		case Image::FORMAT_RGBAH: {
-			format = GL_RGBA;
-			type = GL_HALF_FLOAT;
-		} break;
-		case Image::FORMAT_RGBE9995: {
-			format = GL_RGB;
-			type = GL_UNSIGNED_INT_5_9_9_9_REV;
 		} break;
 		default: {
 			ERR_FAIL_MSG("Invalid format");
