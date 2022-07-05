@@ -125,6 +125,7 @@ protected:
 public:
 	void create(int p_width, int p_height, Image::Format p_format, uint32_t p_flags = FLAGS_DEFAULT);
 	void create_from_image(const Ref<Image> &p_image, uint32_t p_flags = FLAGS_DEFAULT);
+	void update_from_data(const PoolByteArray& p_data, int p_offset = 0);
 
 	void set_flags(uint32_t p_flags);
 	uint32_t get_flags() const;

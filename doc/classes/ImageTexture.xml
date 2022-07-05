@@ -50,6 +50,13 @@
 				Initializes the texture by allocating and setting the data from an [Image] with [code]flags[/code] from [enum Texture.Flags]. An sRGB to linear color space conversion can take place, according to [enum Image.Format].
 			</description>
 		</method>
+		<method name="update_from_data">
+			<return type="void" />
+			<argument index="0" name="data" type="PoolByteArray" />
+			<description>
+				Create from data
+			</description>
+		</method>
 		<method name="get_format" qualifiers="const">
 			<return type="int" enum="Image.Format" />
 			<description>

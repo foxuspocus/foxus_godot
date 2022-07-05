@@ -214,7 +214,7 @@ public:
 			uint32_t p_flags = VS::TEXTURE_FLAGS_DEFAULT) = 0;
 
 	virtual void texture_set_data(RID p_texture, const Ref<Image> &p_image, int p_level = 0) = 0;
-
+	virtual void texture_set_data_raw(RID p_texture, const PoolByteArray& data, int offset = 0) = 0;
 	virtual void texture_set_data_partial(RID p_texture,
 			const Ref<Image> &p_image,
 			int src_x, int src_y,

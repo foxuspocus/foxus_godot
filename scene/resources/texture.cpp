@@ -203,6 +203,10 @@ void ImageTexture::create_from_image(const Ref<Image> &p_image, uint32_t p_flags
 	image_stored = true;
 }
 
+void ImageTexture::update_from_data(const PoolByteArray& p_data, int p_offset) {
+	VisualServer::get_singleton()->texture_set_data_raw(texture, p_data, p_offset);
+}
+
 void ImageTexture::set_flags(uint32_t p_flags) {
 	if (flags == p_flags) {
 		return;
@@ -384,6 +388,7 @@ void ImageTexture::_set_data(Dictionary p_data) {
 void ImageTexture::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create", "width", "height", "format", "flags"), &ImageTexture::create, DEFVAL(FLAGS_DEFAULT));
 	ClassDB::bind_method(D_METHOD("create_from_image", "image", "flags"), &ImageTexture::create_from_image, DEFVAL(FLAGS_DEFAULT));
+	ClassDB::bind_method(D_METHOD("update_from_data", "data", "offset"), &ImageTexture::update_from_data, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_format"), &ImageTexture::get_format);
 #ifndef DISABLE_DEPRECATED
 	ClassDB::bind_method(D_METHOD("load", "path"), &ImageTexture::load);
