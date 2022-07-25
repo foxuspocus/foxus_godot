@@ -187,6 +187,8 @@ opts.Add(BoolVariable("builtin_squish", "Use the built-in squish library", True)
 opts.Add(BoolVariable("builtin_xatlas", "Use the built-in xatlas library", True))
 opts.Add(BoolVariable("builtin_zlib", "Use the built-in zlib library", True))
 opts.Add(BoolVariable("builtin_zstd", "Use the built-in Zstd library", True))
+opts.Add(BoolVariable('perfetto', 'Enable perfetto profiler', 'false'))
+opts.Add(PathVariable('prebuilts_dir', 'path to prebuilts', '#../prebuilts', PathVariable.PathAccept))
 
 # Compilation environment setup
 opts.Add("CXX", "C++ compiler")
@@ -700,6 +702,25 @@ if selected_platform in platform_list:
     if env["vsproj"]:
         env.vs_incs = []
         env.vs_srcs = []
+
+
+    platform = env['platform']
+
+    if platform in ["bsd", "linuxbsd", "x11"]:
+        platform = "linux"
+
+    platform_string = platform + "-" + env['arch']
+
+    if env['platform'] == "android":
+        env.Append(CPPPATH=[env['prebuilts_dir'] + '/foxus_profiler/android/include'])
+        if env['perfetto']:
+            env.Append(CPPDEFINES=["ENABLE_PERFETTO"])
+            env.Append(LIBS=[File(env['prebuilts_dir'] + '/foxus_profiler/android/lib/libfoxus_profiler.so')])
+    else:
+        env.Append(CPPPATH=[env['prebuilts_dir'] + '/foxus_profiler/' + platform_string + '/include'])
+        if env['perfetto']:
+            env.Append(CPPDEFINES=["ENABLE_PERFETTO"])
+            env.Append(LIBS=[File(env['prebuilts_dir'] + '/foxus_profiler/' + platform_string + '/lib/libfoxus_profiler.so')])
 
     Export("env")
 
