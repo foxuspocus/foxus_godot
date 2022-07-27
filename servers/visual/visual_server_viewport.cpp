@@ -35,6 +35,8 @@
 #include "visual_server_globals.h"
 #include "visual_server_scene.h"
 
+#include "profiler.h"
+
 static Transform2D _canvas_get_transform(VisualServerViewport::Viewport *p_viewport, VisualServerCanvas::Canvas *p_canvas, VisualServerViewport::Viewport::CanvasData *p_canvas_data, const Vector2 &p_vp_size) {
 	Transform2D xf = p_viewport->global_transform;
 
@@ -79,6 +81,8 @@ void VisualServerViewport::_draw_3d(Viewport *p_viewport, ARVRInterface::Eyes p_
 
 void VisualServerViewport::_draw_viewport(Viewport *p_viewport, ARVRInterface::Eyes p_eye) {
 	/* Camera should always be BEFORE any other 3D */
+
+	TRACE_EVENT("godot", "draw_eye", "eye", p_eye);
 
 	bool scenario_draw_canvas_bg = false; //draw canvas, or some layer of it, as BG for 3D instead of in front
 	int scenario_canvas_max_layer = 0;
@@ -273,7 +277,10 @@ void VisualServerViewport::draw_viewports() {
 
 	//draw viewports
 	for (int i = 0; i < active_viewports.size(); i++) {
+
 		Viewport *vp = active_viewports[i];
+
+		TRACE_EVENT("godot", "draw_viewport", "width", vp->size.width, "height", vp->size.height);
 
 		if (vp->update_mode == VS::VIEWPORT_UPDATE_DISABLED) {
 			continue;

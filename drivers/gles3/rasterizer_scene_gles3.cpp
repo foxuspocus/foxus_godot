@@ -37,6 +37,9 @@
 #include "servers/camera/camera_feed.h"
 #include "servers/visual/visual_server_raster.h"
 
+//#define PERFETTO_SYNC_OPENGL
+#include "profiler.h"
+
 #ifndef GLES_OVER_GL
 #define glClearDepth glClearDepthf
 #endif
@@ -1998,6 +2001,9 @@ void RasterizerSceneGLES3::_render_list(RenderList::Element **p_elements, int p_
 	state.scene_shader.set_conditional(SceneShaderGLES3::USE_OPAQUE_PREPASS, false);
 
 	for (int i = 0; i < p_element_count; i++) {
+
+		TRACE_EVENT_OPENGL("godot", "render_element");
+
 		RenderList::Element *e = p_elements[i];
 		RasterizerStorageGLES3::Material *material = e->material;
 		RasterizerStorageGLES3::Skeleton *skeleton = nullptr;
@@ -4143,7 +4149,10 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 		state.ubo_data.screen_pixel_size[1] = 1.0 / viewport_height_pixels;
 	}
 
-	_setup_environment(env, p_cam_projection, p_cam_transform, p_eye, p_reflection_probe.is_valid());
+	{
+		TRACE_EVENT_OPENGL("godot", "setup_environment");
+		_setup_environment(env, p_cam_projection, p_cam_transform, p_eye, p_reflection_probe.is_valid());
+	}
 
 	bool fb_cleared = false;
 
@@ -4174,6 +4183,8 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 
 	if (use_depth_prepass) {
 		//pre z pass
+
+		TRACE_EVENT_OPENGL("godot", "depth_preprass");
 
 		glDisable(GL_BLEND);
 		glDepthMask(GL_TRUE);
@@ -4209,8 +4220,14 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 		state.used_depth_prepass = false;
 	}
 
-	_setup_lights(p_light_cull_result, p_light_cull_count, p_cam_transform.affine_inverse(), p_cam_projection, p_shadow_atlas);
-	_setup_reflections(p_reflection_probe_cull_result, p_reflection_probe_cull_count, p_cam_transform.affine_inverse(), p_cam_projection, p_reflection_atlas, env);
+	{
+		TRACE_EVENT_OPENGL("godot", "setup_lights");
+		_setup_lights(p_light_cull_result, p_light_cull_count, p_cam_transform.affine_inverse(), p_cam_projection, p_shadow_atlas);
+	}
+	{
+		TRACE_EVENT_OPENGL("godot", "setup_reflections");
+		_setup_reflections(p_reflection_probe_cull_result, p_reflection_probe_cull_count, p_cam_transform.affine_inverse(), p_cam_projection, p_reflection_atlas, env);
+	}
 
 	bool use_mrt = false;
 
@@ -4228,6 +4245,9 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 	GLuint current_fbo;
 
 	if (probe) {
+
+		TRACE_EVENT_OPENGL("godot", "probe");
+
 		ReflectionAtlas *ref_atlas = reflection_atlas_owner.getptr(probe->atlas);
 		ERR_FAIL_COND(!ref_atlas);
 
@@ -4262,6 +4282,9 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 		glViewport(0, 0, storage->frame.current_rt->width, storage->frame.current_rt->height);
 
 		if (use_mrt) {
+
+			TRACE_EVENT_OPENGL("godot", "use_mrt");
+
 			current_fbo = storage->frame.current_rt->buffers.fbo;
 
 			glBindFramebuffer(GL_FRAMEBUFFER, storage->frame.current_rt->buffers.fbo);
@@ -4467,10 +4490,14 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 		glDisable(GL_BLEND);
 	}
 
-	render_list.sort_by_key(false);
+	{
+		TRACE_EVENT_OPENGL("godot", "sort_render_list");
+		render_list.sort_by_key(false);
+	}
 
 	if (state.directional_light_count == 0) {
 		directional_light = nullptr;
+		TRACE_EVENT_OPENGL("godot", "render_list");
 		_render_list(render_list.elements, render_list.element_count, p_cam_transform, p_cam_projection, sky, false, false, false, false, use_shadows);
 	} else {
 		for (int i = 0; i < state.directional_light_count; i++) {
@@ -4479,6 +4506,7 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 				glEnable(GL_BLEND);
 			}
 			_setup_directional_light(i, p_cam_transform.affine_inverse(), use_shadows);
+			TRACE_EVENT_OPENGL("godot", "render_list");
 			_render_list(render_list.elements, render_list.element_count, p_cam_transform, p_cam_projection, sky, false, false, false, i > 0, use_shadows);
 		}
 	}
@@ -4497,6 +4525,7 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 		*/
 
 		if (sky && sky->panorama.is_valid()) {
+			TRACE_EVENT_OPENGL("godot", "draw_sky");
 			_draw_sky(sky, p_cam_projection, p_cam_transform, false, env->sky_custom_fov, env->bg_energy, env->sky_orientation);
 		}
 	}
@@ -4507,6 +4536,7 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 	//state.scene_shader.set_conditional( SceneShaderGLES3::USE_FOG,false);
 
 	if (use_mrt) {
+		TRACE_EVENT_OPENGL("godot", "render_mrts");
 		_render_mrts(env, p_cam_projection);
 	} else {
 		// Here we have to do the blits/resolves that otherwise are done in the MRT rendering, in particular
@@ -4552,7 +4582,10 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_SCISSOR_TEST);
 
-	render_list.sort_by_reverse_depth_and_priority(true);
+	{
+		TRACE_EVENT_OPENGL("godot", "sort_render_list_by_reverse_depth_and_priority");
+		render_list.sort_by_reverse_depth_and_priority(true);
+	}
 
 	if (state.directional_light_count <= 1) {
 		if (state.directional_light_count == 1) {
@@ -4561,6 +4594,7 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 		} else {
 			directional_light = nullptr;
 		}
+		TRACE_EVENT_OPENGL("godot", "render_list");
 		_render_list(&render_list.elements[render_list.max_elements - render_list.alpha_element_count], render_list.alpha_element_count, p_cam_transform, p_cam_projection, sky, false, true, false, false, use_shadows);
 	} else {
 		// special handling for multiple directional lights
@@ -4592,10 +4626,12 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 				for (int i = 0; i < state.directional_light_count; i++) {
 					directional_light = directional_lights[i];
 					_setup_directional_light(i, p_cam_transform.affine_inverse(), use_shadows);
+					TRACE_EVENT_OPENGL("godot", "render_list");
 					_render_list(&render_list.elements[chunk_start], chunk_split - chunk_start, p_cam_transform, p_cam_projection, sky, false, true, false, i > 0, use_shadows);
 				}
 			} else {
 				directional_light = nullptr;
+				TRACE_EVENT_OPENGL("godot", "render_list");
 				_render_list(&render_list.elements[chunk_start], chunk_split - chunk_start, p_cam_transform, p_cam_projection, sky, false, true, false, false, use_shadows);
 			}
 		}
@@ -4609,7 +4645,10 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 	if (env && (env->dof_blur_far_enabled || env->dof_blur_near_enabled) && storage->frame.current_rt && storage->frame.current_rt->buffers.active) {
 		_prepare_depth_texture();
 	}
-	_post_process(env, p_cam_projection);
+	{
+		TRACE_EVENT_OPENGL("godot", "post_process");
+		_post_process(env, p_cam_projection);
+	}
 	// Needed only for debugging
 	/*	if (shadow_atlas && storage->frame.current_rt) {
 
