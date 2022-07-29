@@ -34,6 +34,8 @@
 #include "drivers/gles_common/rasterizer_asserts.h"
 #include "servers/visual/visual_server_raster.h"
 
+#include "profiler.h"
+
 static const GLenum gl_primitive[] = {
 	GL_POINTS,
 	GL_LINES,

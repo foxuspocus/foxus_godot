@@ -37,7 +37,6 @@
 #include "servers/camera/camera_feed.h"
 #include "servers/visual/visual_server_raster.h"
 
-//#define PERFETTO_SYNC_OPENGL
 #include "profiler.h"
 
 #ifndef GLES_OVER_GL
@@ -2002,9 +2001,10 @@ void RasterizerSceneGLES3::_render_list(RenderList::Element **p_elements, int p_
 
 	for (int i = 0; i < p_element_count; i++) {
 
-		TRACE_EVENT_OPENGL("godot", "render_element");
-
 		RenderList::Element *e = p_elements[i];
+
+		TRACE_EVENT_OPENGL("godot", "render_element", "name", e->instance->name.get_data(), "path", e->instance->path.get_data());
+
 		RasterizerStorageGLES3::Material *material = e->material;
 		RasterizerStorageGLES3::Skeleton *skeleton = nullptr;
 		if (e->instance->skeleton.is_valid()) {

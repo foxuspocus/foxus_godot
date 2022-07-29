@@ -184,6 +184,11 @@ public:
 	FUNC2(mesh_set_custom_aabb, RID, const AABB &)
 	FUNC1RC(AABB, mesh_get_custom_aabb, RID)
 
+#ifdef ENABLE_PERFETTO
+	FUNC2(mesh_set_name, RID, const String &)
+	FUNC2(mesh_set_path, RID, const String &)
+#endif
+
 	FUNC1(mesh_clear, RID)
 
 	/* MULTIMESH API */
@@ -201,6 +206,11 @@ public:
 
 	FUNC1RC(RID, multimesh_get_mesh, RID)
 	FUNC1RC(AABB, multimesh_get_aabb, RID)
+
+#ifdef ENABLE_PERFETTO
+	FUNC2(multimesh_set_name, RID, const String &)
+	FUNC2(multimesh_set_path, RID, const String &)
+#endif
 
 	FUNC2RC(Transform, multimesh_instance_get_transform, RID, int)
 	FUNC2RC(Transform2D, multimesh_instance_get_transform_2d, RID, int)
@@ -369,6 +379,11 @@ public:
 	FUNC2(particles_set_emission_transform, RID, const Transform &)
 
 	FUNC1R(AABB, particles_get_current_aabb, RID)
+
+#ifdef ENABLE_PERFETTO
+	FUNC2(particles_set_name, RID, const String &)
+	FUNC2(particles_set_path, RID, const String &)
+#endif
 
 	/* CAMERA API */
 

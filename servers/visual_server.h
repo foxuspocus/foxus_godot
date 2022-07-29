@@ -339,6 +339,11 @@ public:
 	virtual void mesh_set_custom_aabb(RID p_mesh, const AABB &p_aabb) = 0;
 	virtual AABB mesh_get_custom_aabb(RID p_mesh) const = 0;
 
+#ifdef ENABLE_PERFETTO
+	virtual void mesh_set_name(RID p_mesh, const String &p_name) = 0;
+	virtual void mesh_set_path(RID p_mesh, const String &p_path) = 0;
+#endif
+
 	virtual void mesh_clear(RID p_mesh) = 0;
 
 	/* MULTIMESH API */
@@ -375,6 +380,11 @@ public:
 
 	virtual RID multimesh_get_mesh(RID p_multimesh) const = 0;
 	virtual AABB multimesh_get_aabb(RID p_multimesh) const = 0;
+
+#ifdef ENABLE_PERFETTO
+	virtual void multimesh_set_name(RID p_multimesh, const String &p_name) = 0;
+	virtual void multimesh_set_path(RID p_multimesh, const String &p_path) = 0;
+#endif
 
 	virtual Transform multimesh_instance_get_transform(RID p_multimesh, int p_index) const = 0;
 	virtual Transform2D multimesh_instance_get_transform_2d(RID p_multimesh, int p_index) const = 0;
@@ -615,6 +625,11 @@ public:
 	virtual void particles_set_draw_pass_mesh(RID p_particles, int p_pass, RID p_mesh) = 0;
 
 	virtual AABB particles_get_current_aabb(RID p_particles) = 0;
+
+#ifdef ENABLE_PERFETTO
+	virtual void particles_set_name(RID p_particles, const String &p_name) = 0;
+	virtual void particles_set_path(RID p_particles, const String &p_path) = 0;
+#endif
 
 	virtual void particles_set_emission_transform(RID p_particles, const Transform &p_transform) = 0; //this is only used for 2D, in 3D it's automatic
 

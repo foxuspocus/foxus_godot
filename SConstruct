@@ -188,6 +188,7 @@ opts.Add(BoolVariable("builtin_xatlas", "Use the built-in xatlas library", True)
 opts.Add(BoolVariable("builtin_zlib", "Use the built-in zlib library", True))
 opts.Add(BoolVariable("builtin_zstd", "Use the built-in Zstd library", True))
 opts.Add(BoolVariable('perfetto', 'Enable perfetto profiler', 'false'))
+opts.Add(BoolVariable('perfetto_sync_opengl', 'Synchronize OpenGL traces', 'false'))
 opts.Add(PathVariable('prebuilts_dir', 'path to prebuilts', '#../prebuilts', PathVariable.PathAccept))
 
 # Compilation environment setup
@@ -721,6 +722,9 @@ if selected_platform in platform_list:
         if env['perfetto']:
             env.Append(CPPDEFINES=["ENABLE_PERFETTO"])
             env.Append(LIBS=[File(env['prebuilts_dir'] + '/foxus_profiler/' + platform_string + '/lib/libfoxus_profiler.so')])
+
+    if env['perfetto'] and env['perfetto_sync_opengl']:
+        env.Append(CPPDEFINES=["PERFETTO_SYNC_OPENGL"])
 
     Export("env")
 

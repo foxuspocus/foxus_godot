@@ -1914,6 +1914,10 @@ void VisualServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("mesh_get_surface_count", "mesh"), &VisualServer::mesh_get_surface_count);
 	ClassDB::bind_method(D_METHOD("mesh_set_custom_aabb", "mesh", "aabb"), &VisualServer::mesh_set_custom_aabb);
 	ClassDB::bind_method(D_METHOD("mesh_get_custom_aabb", "mesh"), &VisualServer::mesh_get_custom_aabb);
+#ifdef ENABLE_PERFETTO
+	ClassDB::bind_method(D_METHOD("mesh_set_name", "mesh", "name"), &VisualServer::mesh_set_name);
+	ClassDB::bind_method(D_METHOD("mesh_set_path", "mesh", "path"), &VisualServer::mesh_set_path);
+#endif
 	ClassDB::bind_method(D_METHOD("mesh_clear", "mesh"), &VisualServer::mesh_clear);
 
 	ClassDB::bind_method(D_METHOD("multimesh_create"), &VisualServer::multimesh_create);
@@ -1933,6 +1937,10 @@ void VisualServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("multimesh_set_visible_instances", "multimesh", "visible"), &VisualServer::multimesh_set_visible_instances);
 	ClassDB::bind_method(D_METHOD("multimesh_get_visible_instances", "multimesh"), &VisualServer::multimesh_get_visible_instances);
 	ClassDB::bind_method(D_METHOD("multimesh_set_as_bulk_array", "multimesh", "array"), &VisualServer::multimesh_set_as_bulk_array);
+#ifdef ENABLE_PERFETTO
+	ClassDB::bind_method(D_METHOD("multimesh_set_name", "multimesh", "name"), &VisualServer::multimesh_set_name);
+	ClassDB::bind_method(D_METHOD("multimesh_set_path", "multimesh", "path"), &VisualServer::multimesh_set_path);
+#endif
 #ifndef _3D_DISABLED
 	ClassDB::bind_method(D_METHOD("immediate_create"), &VisualServer::immediate_create);
 	ClassDB::bind_method(D_METHOD("immediate_begin", "immediate", "primitive", "texture"), &VisualServer::immediate_begin, DEFVAL(RID()));
@@ -2055,6 +2063,10 @@ void VisualServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("particles_set_draw_pass_mesh", "particles", "pass", "mesh"), &VisualServer::particles_set_draw_pass_mesh);
 	ClassDB::bind_method(D_METHOD("particles_get_current_aabb", "particles"), &VisualServer::particles_get_current_aabb);
 	ClassDB::bind_method(D_METHOD("particles_set_emission_transform", "particles", "transform"), &VisualServer::particles_set_emission_transform);
+#ifdef ENABLE_PERFETTO
+	ClassDB::bind_method(D_METHOD("particles_set_name", "particles", "name"), &VisualServer::particles_set_name);
+	ClassDB::bind_method(D_METHOD("particles_set_path", "particles", "path"), &VisualServer::particles_set_path);
+#endif
 
 	ClassDB::bind_method(D_METHOD("camera_create"), &VisualServer::camera_create);
 	ClassDB::bind_method(D_METHOD("camera_set_perspective", "camera", "fovy_degrees", "z_near", "z_far"), &VisualServer::camera_set_perspective);

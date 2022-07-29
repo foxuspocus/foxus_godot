@@ -301,7 +301,11 @@ public:
 	/* NODE/TREE */
 
 	StringName get_name() const;
+#ifdef ENABLE_PERFETTO
+	virtual void set_name(const String &p_name);
+#else
 	void set_name(const String &p_name);
+#endif
 
 	void add_child(Node *p_child, bool p_legible_unique_name = false);
 	void add_child_below_node(Node *p_node, Node *p_child, bool p_legible_unique_name = false);
