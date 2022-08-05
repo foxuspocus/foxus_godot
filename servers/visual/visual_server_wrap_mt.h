@@ -611,6 +611,10 @@ public:
 	FUNC3(canvas_item_set_custom_rect, RID, bool, const Rect2 &)
 	FUNC2(canvas_item_set_modulate, RID, const Color &)
 	FUNC2(canvas_item_set_self_modulate, RID, const Color &)
+#ifdef ENABLE_PERFETTO
+	FUNC2(canvas_item_set_name, RID, const String &)
+	FUNC2(canvas_item_set_path, RID, const String &)
+#endif
 
 	FUNC2(canvas_item_set_draw_behind_parent, RID, bool)
 

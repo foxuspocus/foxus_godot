@@ -481,6 +481,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 	//	bdata.reset_flush();
 	//	return;
 
+	TRACE_EVENT_OPENGL("godot", "render_batches");
+
 	int num_batches = bdata.batches.size();
 
 	for (int batch_num = 0; batch_num < num_batches; batch_num++) {
@@ -500,6 +502,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 				_batch_render_lines(batch, p_material, true);
 			} break;
 			default: {
+				TRACE_EVENT_OPENGL("godot", "render_commands");
+
 				int end_command = batch.first_command + batch.num_commands;
 
 				DEV_ASSERT(batch.item);
@@ -510,6 +514,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 
 					switch (c->type) {
 						case Item::Command::TYPE_LINE: {
+							TRACE_EVENT_OPENGL("godot", "command_line");
+
 							Item::CommandLine *line = static_cast<Item::CommandLine *>(c);
 							_set_texture_rect_mode(false);
 
@@ -566,6 +572,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 							}
 						} break;
 						case Item::Command::TYPE_POLYLINE: {
+							TRACE_EVENT_OPENGL("godot", "command_polyline");
+
 							Item::CommandPolyLine *pline = static_cast<Item::CommandPolyLine *>(c);
 							_set_texture_rect_mode(false);
 
@@ -619,6 +627,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 
 						} break;
 						case Item::Command::TYPE_RECT: {
+							TRACE_EVENT_OPENGL("godot", "command_rect");
+
 							Item::CommandRect *rect = static_cast<Item::CommandRect *>(c);
 
 							//set color
@@ -700,6 +710,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 							} // if not use nvidia workaround
 						} break;
 						case Item::Command::TYPE_NINEPATCH: {
+							TRACE_EVENT_OPENGL("godot", "command_ninepatch");
+
 							Item::CommandNinePatch *np = static_cast<Item::CommandNinePatch *>(c);
 
 							_set_texture_rect_mode(true, true);
@@ -738,6 +750,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 							storage->info.render._2d_draw_call_count++;
 						} break;
 						case Item::Command::TYPE_PRIMITIVE: {
+							TRACE_EVENT_OPENGL("godot", "command_primitive");
+
 							Item::CommandPrimitive *primitive = static_cast<Item::CommandPrimitive *>(c);
 							_set_texture_rect_mode(false);
 
@@ -800,6 +814,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 
 						} break;
 						case Item::Command::TYPE_MESH: {
+							TRACE_EVENT_OPENGL("godot", "command_mesh");
+
 							Item::CommandMesh *mesh = static_cast<Item::CommandMesh *>(c);
 							_set_texture_rect_mode(false);
 
@@ -835,6 +851,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 
 						} break;
 						case Item::Command::TYPE_MULTIMESH: {
+							TRACE_EVENT_OPENGL("godot", "command_multimesh");
+
 							Item::CommandMultiMesh *mmesh = static_cast<Item::CommandMultiMesh *>(c);
 
 							RasterizerStorageGLES3::MultiMesh *multi_mesh = storage->multimesh_owner.getornull(mmesh->multimesh);
@@ -957,6 +975,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 
 						} break;
 						case Item::Command::TYPE_PARTICLES: {
+							TRACE_EVENT_OPENGL("godot", "command_particles");
+
 							Item::CommandParticles *particles_cmd = static_cast<Item::CommandParticles *>(c);
 
 							RasterizerStorageGLES3::Particles *particles = storage->particles_owner.getornull(particles_cmd->particles);
@@ -1084,6 +1104,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 
 						} break;
 						case Item::Command::TYPE_CIRCLE: {
+							TRACE_EVENT_OPENGL("godot", "command_circle");
+
 							_set_texture_rect_mode(false);
 
 							Item::CommandCircle *circle = static_cast<Item::CommandCircle *>(c);
@@ -1106,12 +1128,16 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 							//canvas_draw_circle(circle->indices.size(),circle->indices.ptr(),circle->points.ptr(),circle->uvs.ptr(),circle->colors.ptr(),circle->texture,circle->colors.size()==1);
 						} break;
 						case Item::Command::TYPE_TRANSFORM: {
+							TRACE_EVENT_OPENGL("godot", "command_transform");
+
 							Item::CommandTransform *transform = static_cast<Item::CommandTransform *>(c);
 							state.extra_matrix = transform->xform;
 							state.canvas_shader.set_uniform(CanvasShaderGLES3::EXTRA_MATRIX, state.extra_matrix);
 
 						} break;
 						case Item::Command::TYPE_CLIP_IGNORE: {
+							TRACE_EVENT_OPENGL("godot", "command_clip_ignore");
+
 							Item::CommandClipIgnore *ci = static_cast<Item::CommandClipIgnore *>(c);
 							if (p_current_clip) {
 								if (ci->ignore != r_reclip) {
@@ -1151,6 +1177,8 @@ void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip,
 
 void RasterizerCanvasGLES3::render_joined_item(const BItemJoined &p_bij, RenderItemState &r_ris) {
 	storage->info.render._2d_item_count++;
+
+	TRACE_EVENT_OPENGL("godot", "render_joined_item");
 
 #if defined(TOOLS_ENABLED) && defined(DEBUG_ENABLED)
 	if (bdata.diagnose_frame) {
@@ -1880,6 +1908,9 @@ bool RasterizerCanvasGLES3::try_join_item(Item *p_ci, RenderItemState &r_ris, bo
 }
 
 void RasterizerCanvasGLES3::canvas_render_items_implementation(Item *p_item_list, int p_z, const Color &p_modulate, Light *p_light, const Transform2D &p_base_transform) {
+
+	TRACE_EVENT_OPENGL("godot", "canvas_render_items_implementation");
+
 	// parameters are easier to pass around in a structure
 	RenderItemState ris;
 	ris.item_group_z = p_z;
@@ -1969,6 +2000,9 @@ void RasterizerCanvasGLES3::_batch_upload_buffers() {
 }
 
 void RasterizerCanvasGLES3::_batch_render_lines(const Batch &p_batch, RasterizerStorageGLES3::Material *p_material, bool p_anti_alias) {
+
+	TRACE_EVENT_OPENGL("godot", "batch_render_lines", "name", p_batch.item->name.get_data(), "path", p_batch.item->path.get_data());
+
 	_set_texture_rect_mode(false);
 
 	_bind_canvas_texture(RID(), RID());
@@ -2035,6 +2069,9 @@ void RasterizerCanvasGLES3::_batch_render_prepare() {
 }
 
 void RasterizerCanvasGLES3::_batch_render_generic(const Batch &p_batch, RasterizerStorageGLES3::Material *p_material) {
+
+	TRACE_EVENT_OPENGL("godot", "batch_render_generic", "name", p_batch.item->name.get_data(), "path", p_batch.item->path.get_data());
+
 	ERR_FAIL_COND(p_batch.num_commands <= 0);
 
 	const bool &use_light_angles = bdata.use_light_angles;

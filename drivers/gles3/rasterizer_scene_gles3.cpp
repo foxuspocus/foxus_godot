@@ -1084,6 +1084,9 @@ void RasterizerSceneGLES3::gi_probe_instance_set_bounds(RID p_probe, const Vecto
 ////////////////////////////
 
 bool RasterizerSceneGLES3::_setup_material(RasterizerStorageGLES3::Material *p_material, bool p_depth_pass, bool p_alpha_pass) {
+
+	TRACE_EVENT_OPENGL("godot", "setup_material");
+
 	/* this is handled outside
 	if (p_material->shader->spatial.cull_mode == RasterizerStorageGLES3::Shader::Spatial::CULL_MODE_DISABLED) {
 		glDisable(GL_CULL_FACE);
@@ -1295,6 +1298,9 @@ struct RasterizerGLES3ParticleSort {
 };
 
 void RasterizerSceneGLES3::_setup_geometry(RenderList::Element *e, const Transform &p_view_transform) {
+
+	TRACE_EVENT_OPENGL("godot", "setup_geometry", "name", e->instance->name.get_data(), "path", e->instance->path.get_data());
+
 	switch (e->instance->base_type) {
 		case VS::INSTANCE_MESH: {
 			RasterizerStorageGLES3::Surface *s = static_cast<RasterizerStorageGLES3::Surface *>(e->geometry);
@@ -1492,6 +1498,8 @@ static const GLenum gl_primitive[] = {
 };
 
 void RasterizerSceneGLES3::_render_geometry(RenderList::Element *e) {
+	TRACE_EVENT_OPENGL("godot", "render_geometry", "name", e->instance->name.get_data(), "path", e->instance->path.get_data());
+
 	switch (e->instance->base_type) {
 		case VS::INSTANCE_MESH: {
 			RasterizerStorageGLES3::Surface *s = static_cast<RasterizerStorageGLES3::Surface *>(e->geometry);
@@ -1775,6 +1783,9 @@ void RasterizerSceneGLES3::_render_geometry(RenderList::Element *e) {
 }
 
 void RasterizerSceneGLES3::_setup_light(RenderList::Element *e, const Transform &p_view_transform) {
+
+	TRACE_EVENT_OPENGL("godot", "setup_light", "name", e->instance->name.get_data(), "path", e->instance->path.get_data());
+
 	int maxobj = state.max_forward_lights_per_object;
 	int *omni_indices = (int *)alloca(maxobj * sizeof(int));
 	int omni_count = 0;

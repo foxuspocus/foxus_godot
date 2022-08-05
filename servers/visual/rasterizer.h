@@ -985,6 +985,11 @@ public:
 		RID material;
 		RID skeleton;
 
+#ifdef ENABLE_PERFETTO
+		CharString name;
+		CharString path;
+#endif
+
 		Item *next;
 
 		struct CopyBackBuffer {

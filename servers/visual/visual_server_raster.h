@@ -709,6 +709,10 @@ public:
 	BIND3(canvas_item_set_custom_rect, RID, bool, const Rect2 &)
 	BIND2(canvas_item_set_modulate, RID, const Color &)
 	BIND2(canvas_item_set_self_modulate, RID, const Color &)
+#ifdef ENABLE_PERFETTO
+	BIND2(canvas_item_set_name, RID, const String &)
+	BIND2(canvas_item_set_path, RID, const String &)
+#endif
 
 	BIND2(canvas_item_set_draw_behind_parent, RID, bool)
 

@@ -4355,7 +4355,7 @@ void RasterizerStorageGLES3::mesh_set_name(RID p_mesh, const String &p_name) {
 	Mesh *mesh = mesh_owner.getornull(p_mesh);
 	ERR_FAIL_COND(!mesh);
 
-	mesh->name = p_name.ascii();
+	mesh->name = p_name.utf8();
 }
 
 void RasterizerStorageGLES3::mesh_set_path(RID p_mesh, const String &p_path) {
@@ -5051,14 +5051,14 @@ void RasterizerStorageGLES3::_multimesh_set_name(RID p_multimesh, const String &
 	MultiMesh *multimesh = multimesh_owner.getornull(p_multimesh);
 	ERR_FAIL_COND(!multimesh);
 
-	multimesh->name = p_name.ascii();
+	multimesh->name = p_name.utf8();
 }
 
 void RasterizerStorageGLES3::_multimesh_set_path(RID p_multimesh, const String &p_path) {
 	MultiMesh *multimesh = multimesh_owner.getornull(p_multimesh);
 	ERR_FAIL_COND(!multimesh);
 
-	multimesh->path = p_path.ascii();
+	multimesh->path = p_path.utf8();
 }
 #endif
 
@@ -6569,14 +6569,14 @@ void RasterizerStorageGLES3::particles_set_name(RID p_particles, const String &p
 	Particles *particles = particles_owner.getornull(p_particles);
 	ERR_FAIL_COND(!particles);
 
-	particles->name = p_name.ascii();
+	particles->name = p_name.utf8();
 }
 
 void RasterizerStorageGLES3::particles_set_path(RID p_particles, const String &p_path) {
 	Particles *particles = particles_owner.getornull(p_particles);
 	ERR_FAIL_COND(!particles);
 
-	particles->path = p_path.ascii();
+	particles->path = p_path.utf8();
 }
 #endif
 

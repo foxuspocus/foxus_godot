@@ -38,6 +38,8 @@
 #include "rasterizer_storage_common.h"
 #include "servers/visual/rasterizer.h"
 
+#include "profiler.h"
+
 // We are using the curiously recurring template pattern
 // https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
 // For static polymorphism.
@@ -187,12 +189,17 @@ public:
 		// we can keep the batch structure small because we either need to store
 		// the color if a handled batch, or the parent item if a default batch, so
 		// we can reference the correct originating command
+#ifdef ENABLE_PERFETTO
+		BatchColor color;
+		const RasterizerCanvas::Item *item;
+#else
 		union {
 			BatchColor color;
 
 			// for default batches we will store the parent item
 			const RasterizerCanvas::Item *item;
 		};
+#endif
 
 		uint32_t get_num_verts() const {
 			switch (type) {
@@ -803,6 +810,9 @@ PREAMBLE(void)::batch_canvas_render_items_begin(const Color &p_modulate, Rasteri
 }
 
 PREAMBLE(void)::batch_canvas_render_items_end() {
+
+	TRACE_EVENT("godot", "batch_canvas_render_items_end");
+
 	if (!bdata.settings_use_batching) {
 		return;
 	}
@@ -826,6 +836,9 @@ PREAMBLE(void)::batch_canvas_render_items_end() {
 }
 
 PREAMBLE(void)::batch_canvas_render_items(RasterizerCanvas::Item *p_item_list, int p_z, const Color &p_modulate, RasterizerCanvas::Light *p_light, const Transform2D &p_base_transform) {
+
+	TRACE_EVENT("godot", "batch_canvas_render_items");
+
 	// stage 1 : join similar items, so that their state changes are not repeated,
 	// and commands from joined items can be batched together
 	if (bdata.settings_use_batching) {
@@ -1372,6 +1385,10 @@ PREAMBLE(bool)::_prefill_line(RasterizerCanvas::Item::CommandLine *p_line, FillS
 		r_fill_state.curr_batch->num_commands++;
 	}
 
+	#ifdef ENABLE_PERFETTO
+		r_fill_state.curr_batch->item = p_item;
+	#endif
+
 	// fill the geometry
 	Vector2 from = p_line->from;
 	Vector2 to = p_line->to;
@@ -1704,6 +1721,10 @@ bool C_PREAMBLE::_prefill_polygon(RasterizerCanvas::Item::CommandPolygon *p_poly
 		// we could alternatively do the count when closing a batch .. perhaps more efficient
 		r_fill_state.curr_batch->num_commands += num_inds;
 	}
+
+	#ifdef ENABLE_PERFETTO
+		r_fill_state.curr_batch->item = p_item;
+	#endif
 
 	// PRECALCULATE THE COLORS (as there may be less colors than there are indices
 	// in either hardware or software paths)
@@ -2044,6 +2065,10 @@ bool C_PREAMBLE::_prefill_rect(RasterizerCanvas::Item::CommandRect *rect, FillSt
 		r_fill_state.curr_batch->num_commands++;
 	}
 
+	#ifdef ENABLE_PERFETTO
+		r_fill_state.curr_batch->item = p_item;
+	#endif
+
 	// fill the quad geometry
 	Vector2 mins = rect->rect.position;
 
@@ -2250,6 +2275,9 @@ bool C_PREAMBLE::_prefill_rect(RasterizerCanvas::Item::CommandRect *rect, FillSt
 // This function may be called MULTIPLE TIMES for each item, so needs to record how far it has got
 PREAMBLE(bool)::prefill_joined_item(FillState &r_fill_state, int &r_command_start, RasterizerCanvas::Item *p_item, RasterizerCanvas::Item *p_current_clip, bool &r_reclip, typename T_STORAGE::Material *p_material) {
 	// we will prefill batches and vertices ready for sending in one go to the vertex buffer
+
+	TRACE_EVENT("godot", "prefill_joined_item", "name", p_item->name.get_data(), "path", p_item->path.get_data());
+
 	int command_count = p_item->commands.size();
 	RasterizerCanvas::Item::Command *const *commands = p_item->commands.ptr();
 
@@ -2534,6 +2562,9 @@ PREAMBLE(void)::flush_render_batches(RasterizerCanvas::Item *p_first_item, Raste
 }
 
 PREAMBLE(void)::render_joined_item_commands(const BItemJoined &p_bij, RasterizerCanvas::Item *p_current_clip, bool &r_reclip, typename T_STORAGE::Material *p_material, bool p_lit, const RenderItemState &p_ris) {
+
+	TRACE_EVENT("godot", "render_joined_item_commands");
+
 	RasterizerCanvas::Item *item = nullptr;
 	RasterizerCanvas::Item *first_item = bdata.item_refs[p_bij.first_item_ref].item;
 
@@ -2652,6 +2683,9 @@ PREAMBLE(void)::_legacy_canvas_item_render_commands(RasterizerCanvas::Item *p_it
 }
 
 PREAMBLE(void)::record_items(RasterizerCanvas::Item *p_item_list, int p_z) {
+
+	TRACE_EVENT("godot", "record_items");
+
 	while (p_item_list) {
 		BSortItem *s = bdata.sort_items.request_with_grow();
 

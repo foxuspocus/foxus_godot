@@ -2862,7 +2862,7 @@ void RasterizerStorageGLES2::mesh_set_name(RID p_mesh, const String &p_name) {
 	Mesh *mesh = mesh_owner.getornull(p_mesh);
 	ERR_FAIL_COND(!mesh);
 
-	mesh->name = p_name.ascii();
+	mesh->name = p_name.utf8();
 }
 
 void RasterizerStorageGLES2::mesh_set_path(RID p_mesh, const String &p_path) {
@@ -3457,7 +3457,7 @@ void RasterizerStorageGLES2::_multimesh_set_name(RID p_multimesh, const String &
 	MultiMesh *multimesh = multimesh_owner.getornull(p_multimesh);
 	ERR_FAIL_COND(!multimesh);
 
-	multimesh->name = p_name.ascii();
+	multimesh->name = p_name.utf8();
 }
 
 void RasterizerStorageGLES2::_multimesh_set_path(RID p_multimesh, const String &p_path) {
