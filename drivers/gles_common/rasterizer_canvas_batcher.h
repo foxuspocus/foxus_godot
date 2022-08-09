@@ -2466,6 +2466,9 @@ PREAMBLE(bool)::prefill_joined_item(FillState &r_fill_state, int &r_command_star
 }
 
 PREAMBLE(void)::flush_render_batches(RasterizerCanvas::Item *p_first_item, RasterizerCanvas::Item *p_current_clip, bool &r_reclip, typename T_STORAGE::Material *p_material, uint32_t p_sequence_batch_type_flags) {
+
+	TRACE_EVENT("godot", "flush_render_batches");
+
 	// some heuristic to decide whether to use colored verts.
 	// feel free to tweak this.
 	// this could use hysteresis, to prevent jumping between methods
@@ -2474,70 +2477,75 @@ PREAMBLE(void)::flush_render_batches(RasterizerCanvas::Item *p_first_item, Raste
 
 	RasterizerStorageCommon::FVF backup_fvf = bdata.fvf;
 
-	// the batch type in this flush can override the fvf from the joined item.
-	// The joined item uses the material to determine fvf, assuming a rect...
-	// however with custom drawing, lines or polys may be drawn.
-	// lines contain no color (this is stored in the batch), and polys contain vertex and color only.
-	if (p_sequence_batch_type_flags & (RasterizerStorageCommon::BTF_LINE | RasterizerStorageCommon::BTF_LINE_AA)) {
-		// do nothing, use the default regular FVF
-		bdata.fvf = RasterizerStorageCommon::FVF_REGULAR;
-	} else {
-		// switch from regular to colored?
-		if (bdata.fvf == RasterizerStorageCommon::FVF_REGULAR) {
-			// only check whether to convert if there are quads (prevent divide by zero)
-			// and we haven't decided to prevent color baking (due to e.g. MODULATE
-			// being used in a shader)
-			if (bdata.total_quads && !(bdata.joined_item_batch_flags & RasterizerStorageCommon::PREVENT_COLOR_BAKING)) {
-				// minus 1 to prevent single primitives (ratio 1.0) always being converted to colored..
-				// in that case it is slightly cheaper to just have the color as part of the batch
-				float ratio = (float)(bdata.total_color_changes - 1) / (float)bdata.total_quads;
+	{
+		TRACE_EVENT("godot", "translate_fvf");
 
-				// use bigger than or equal so that 0.0 threshold can force always using colored verts
-				if (ratio >= bdata.settings_colored_vertex_format_threshold) {
+		// the batch type in this flush can override the fvf from the joined item.
+		// The joined item uses the material to determine fvf, assuming a rect...
+		// however with custom drawing, lines or polys may be drawn.
+		// lines contain no color (this is stored in the batch), and polys contain vertex and color only.
+		if (p_sequence_batch_type_flags & (RasterizerStorageCommon::BTF_LINE | RasterizerStorageCommon::BTF_LINE_AA)) {
+			// do nothing, use the default regular FVF
+			bdata.fvf = RasterizerStorageCommon::FVF_REGULAR;
+		} else {
+			// switch from regular to colored?
+			if (bdata.fvf == RasterizerStorageCommon::FVF_REGULAR) {
+				// only check whether to convert if there are quads (prevent divide by zero)
+				// and we haven't decided to prevent color baking (due to e.g. MODULATE
+				// being used in a shader)
+				if (bdata.total_quads && !(bdata.joined_item_batch_flags & RasterizerStorageCommon::PREVENT_COLOR_BAKING)) {
+					// minus 1 to prevent single primitives (ratio 1.0) always being converted to colored..
+					// in that case it is slightly cheaper to just have the color as part of the batch
+					float ratio = (float)(bdata.total_color_changes - 1) / (float)bdata.total_quads;
+
+					// use bigger than or equal so that 0.0 threshold can force always using colored verts
+					if (ratio >= bdata.settings_colored_vertex_format_threshold) {
+						bdata.use_colored_vertices = true;
+						bdata.fvf = RasterizerStorageCommon::FVF_COLOR;
+					}
+				}
+
+				// if we used vertex colors
+				if (bdata.vertex_colors.size()) {
 					bdata.use_colored_vertices = true;
 					bdata.fvf = RasterizerStorageCommon::FVF_COLOR;
 				}
+
+				// needs light angles?
+				if (bdata.use_light_angles) {
+					bdata.fvf = RasterizerStorageCommon::FVF_LIGHT_ANGLE;
+				}
 			}
 
-			// if we used vertex colors
-			if (bdata.vertex_colors.size()) {
-				bdata.use_colored_vertices = true;
-				bdata.fvf = RasterizerStorageCommon::FVF_COLOR;
-			}
+			backup_fvf = bdata.fvf;
+		} // if everything else except lines
 
-			// needs light angles?
-			if (bdata.use_light_angles) {
-				bdata.fvf = RasterizerStorageCommon::FVF_LIGHT_ANGLE;
-			}
+		// translate if required to larger FVFs
+		switch (bdata.fvf) {
+			case RasterizerStorageCommon::FVF_UNBATCHED: // should not happen
+				break;
+			case RasterizerStorageCommon::FVF_REGULAR: // no change
+				break;
+			case RasterizerStorageCommon::FVF_COLOR: {
+				// special case, where vertex colors are used (polys)
+				if (!bdata.vertex_colors.size()) {
+					_translate_batches_to_larger_FVF<BatchVertexColored, false, false, false>(p_sequence_batch_type_flags);
+				} else {
+					// normal, reduce number of batches by baking batch colors
+					_translate_batches_to_vertex_colored_FVF();
+				}
+			} break;
+			case RasterizerStorageCommon::FVF_LIGHT_ANGLE:
+				_translate_batches_to_larger_FVF<BatchVertexLightAngled, true, false, false>(p_sequence_batch_type_flags);
+				break;
+			case RasterizerStorageCommon::FVF_MODULATED:
+				_translate_batches_to_larger_FVF<BatchVertexModulated, true, true, false>(p_sequence_batch_type_flags);
+				break;
+			case RasterizerStorageCommon::FVF_LARGE:
+				_translate_batches_to_larger_FVF<BatchVertexLarge, true, true, true>(p_sequence_batch_type_flags);
+				break;
 		}
 
-		backup_fvf = bdata.fvf;
-	} // if everything else except lines
-
-	// translate if required to larger FVFs
-	switch (bdata.fvf) {
-		case RasterizerStorageCommon::FVF_UNBATCHED: // should not happen
-			break;
-		case RasterizerStorageCommon::FVF_REGULAR: // no change
-			break;
-		case RasterizerStorageCommon::FVF_COLOR: {
-			// special case, where vertex colors are used (polys)
-			if (!bdata.vertex_colors.size()) {
-				_translate_batches_to_larger_FVF<BatchVertexColored, false, false, false>(p_sequence_batch_type_flags);
-			} else {
-				// normal, reduce number of batches by baking batch colors
-				_translate_batches_to_vertex_colored_FVF();
-			}
-		} break;
-		case RasterizerStorageCommon::FVF_LIGHT_ANGLE:
-			_translate_batches_to_larger_FVF<BatchVertexLightAngled, true, false, false>(p_sequence_batch_type_flags);
-			break;
-		case RasterizerStorageCommon::FVF_MODULATED:
-			_translate_batches_to_larger_FVF<BatchVertexModulated, true, true, false>(p_sequence_batch_type_flags);
-			break;
-		case RasterizerStorageCommon::FVF_LARGE:
-			_translate_batches_to_larger_FVF<BatchVertexLarge, true, true, true>(p_sequence_batch_type_flags);
-			break;
 	}
 
 	// send buffers to opengl

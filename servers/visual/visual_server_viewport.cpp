@@ -322,7 +322,10 @@ void VisualServerViewport::draw_viewports() {
 
 			// and draw left eye/mono
 			_draw_viewport(vp, leftOrMono);
-			arvr_interface->commit_for_eye(leftOrMono, vp->render_target, vp->viewport_to_screen_rect);
+			{
+				TRACE_EVENT("godot", "commit_for_eye");
+				arvr_interface->commit_for_eye(leftOrMono, vp->render_target, vp->viewport_to_screen_rect);
+			}
 
 			// render right eye
 			if (leftOrMono == ARVRInterface::EYE_LEFT) {
@@ -333,7 +336,10 @@ void VisualServerViewport::draw_viewports() {
 				VSG::rasterizer->set_current_render_target(vp->render_target);
 
 				_draw_viewport(vp, ARVRInterface::EYE_RIGHT);
-				arvr_interface->commit_for_eye(ARVRInterface::EYE_RIGHT, vp->render_target, vp->viewport_to_screen_rect);
+				{
+					TRACE_EVENT("godot", "commit_for_eye");
+					arvr_interface->commit_for_eye(ARVRInterface::EYE_RIGHT, vp->render_target, vp->viewport_to_screen_rect);
+				}
 			}
 
 			// and for our frame timing, mark when we've finished committing our eyes

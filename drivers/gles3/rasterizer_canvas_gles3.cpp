@@ -1957,6 +1957,9 @@ void RasterizerCanvasGLES3::canvas_render_items_implementation(Item *p_item_list
 }
 
 void RasterizerCanvasGLES3::_batch_upload_buffers() {
+
+	TRACE_EVENT_OPENGL("godot", "batch_upload_buffers");
+
 	// noop?
 	if (!bdata.vertices.size()) {
 		return;
@@ -1972,27 +1975,38 @@ void RasterizerCanvasGLES3::_batch_upload_buffers() {
 
 	// orphan the old (for now)
 	if (bdata.buffer_mode_batch_upload_send_null) {
+		TRACE_EVENT_OPENGL("godot", "batch_upload_send_null");
 		glBufferData(GL_ARRAY_BUFFER, 0, nullptr, buffer_usage_flag); // GL_DYNAMIC_DRAW);
 	}
 
 	switch (bdata.fvf) {
 		case RasterizerStorageCommon::FVF_UNBATCHED: // should not happen
 			break;
-		case RasterizerStorageCommon::FVF_REGULAR: // no change
+		case RasterizerStorageCommon::FVF_REGULAR: { // no change
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_regular", "size", bdata.vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertex) * bdata.vertices.size(), bdata.vertices.get_data(), buffer_usage_flag);
 			break;
-		case RasterizerStorageCommon::FVF_COLOR:
+		}
+		case RasterizerStorageCommon::FVF_COLOR: {
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_color", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertexColored) * bdata.unit_vertices.size(), bdata.unit_vertices.get_unit(0), buffer_usage_flag);
 			break;
-		case RasterizerStorageCommon::FVF_LIGHT_ANGLE:
+		}
+		case RasterizerStorageCommon::FVF_LIGHT_ANGLE: {
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_light_angle", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertexLightAngled) * bdata.unit_vertices.size(), bdata.unit_vertices.get_unit(0), buffer_usage_flag);
 			break;
-		case RasterizerStorageCommon::FVF_MODULATED:
+		}
+		case RasterizerStorageCommon::FVF_MODULATED: {
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_modulated", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertexModulated) * bdata.unit_vertices.size(), bdata.unit_vertices.get_unit(0), buffer_usage_flag);
 			break;
-		case RasterizerStorageCommon::FVF_LARGE:
+		}
+		case RasterizerStorageCommon::FVF_LARGE: {
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_large", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertexLarge) * bdata.unit_vertices.size(), bdata.unit_vertices.get_unit(0), buffer_usage_flag);
 			break;
+		}
 	}
 
 	// might not be necessary
@@ -2001,7 +2015,7 @@ void RasterizerCanvasGLES3::_batch_upload_buffers() {
 
 void RasterizerCanvasGLES3::_batch_render_lines(const Batch &p_batch, RasterizerStorageGLES3::Material *p_material, bool p_anti_alias) {
 
-	TRACE_EVENT_OPENGL("godot", "batch_render_lines", "name", p_batch.item->name.get_data(), "path", p_batch.item->path.get_data());
+	TRACE_EVENT("godot", "batch_render_lines", "name", p_batch.item->name.get_data(), "path", p_batch.item->path.get_data());
 
 	_set_texture_rect_mode(false);
 
@@ -2070,7 +2084,7 @@ void RasterizerCanvasGLES3::_batch_render_prepare() {
 
 void RasterizerCanvasGLES3::_batch_render_generic(const Batch &p_batch, RasterizerStorageGLES3::Material *p_material) {
 
-	TRACE_EVENT_OPENGL("godot", "batch_render_generic", "name", p_batch.item->name.get_data(), "path", p_batch.item->path.get_data());
+	TRACE_EVENT("godot", "batch_render_generic", "name", p_batch.item->name.get_data(), "path", p_batch.item->path.get_data());
 
 	ERR_FAIL_COND(p_batch.num_commands <= 0);
 
