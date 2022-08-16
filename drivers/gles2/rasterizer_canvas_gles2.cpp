@@ -53,7 +53,7 @@ void RasterizerCanvasGLES2::_batch_upload_buffers() {
 		return;
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_buffers.current_vertex_buffer());
 
 	// usage flag is a project setting
 	GLenum buffer_usage_flag = GL_DYNAMIC_DRAW;
@@ -112,8 +112,8 @@ void RasterizerCanvasGLES2::_batch_render_lines(const Batch &p_batch, Rasterizer
 	int sizeof_vert = sizeof(BatchVertex);
 
 	// bind the index and vertex buffer
-	glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_vertex_buffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bdata.gl_index_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_buffers.current_vertex_buffer());
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bdata.gl_buffers.current_index_buffer());
 
 	uint64_t pointer = 0;
 	glVertexAttribPointer(VS::ARRAY_VERTEX, 2, GL_FLOAT, GL_FALSE, sizeof_vert, (const void *)pointer);
@@ -193,8 +193,8 @@ void RasterizerCanvasGLES2::_batch_render_generic(const Batch &p_batch, Rasteriz
 	_bind_canvas_texture(tex.RID_texture, tex.RID_normal);
 
 	// bind the index and vertex buffer
-	glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_vertex_buffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bdata.gl_index_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_buffers.current_vertex_buffer());
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bdata.gl_buffers.current_index_buffer());
 
 	uint64_t pointer = 0;
 	glVertexAttribPointer(VS::ARRAY_VERTEX, 2, GL_FLOAT, GL_FALSE, sizeof_vert, (const void *)pointer);
@@ -2326,41 +2326,48 @@ void RasterizerCanvasGLES2::initialize() {
 
 	batch_initialize();
 
-	// just reserve some space (may not be needed as we are orphaning, but hey ho)
-	glGenBuffers(1, &bdata.gl_vertex_buffer);
 
-	if (bdata.vertex_buffer_size_bytes) {
-		glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_vertex_buffer);
-		glBufferData(GL_ARRAY_BUFFER, bdata.vertex_buffer_size_bytes, nullptr, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	GLuint* gl_vertex_buffers = bdata.gl_buffers.get_vertex_buffers();
+	glGenBuffers(bdata.gl_buffers.size(), gl_vertex_buffers);
 
-		// pre fill index buffer, the indices never need to change so can be static
-		glGenBuffers(1, &bdata.gl_index_buffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bdata.gl_index_buffer);
+	GLuint* gl_index_buffers = bdata.gl_buffers.get_index_buffers();
+	glGenBuffers(bdata.gl_buffers.size(), gl_index_buffers);
 
-		Vector<uint16_t> indices;
-		indices.resize(bdata.index_buffer_size_units);
+	for (size_t i = 0; i < bdata.gl_buffers.size(); i++) {
 
-		for (unsigned int q = 0; q < bdata.max_quads; q++) {
-			int i_pos = q * 6; //  6 inds per quad
-			int q_pos = q * 4; // 4 verts per quad
-			indices.set(i_pos, q_pos);
-			indices.set(i_pos + 1, q_pos + 1);
-			indices.set(i_pos + 2, q_pos + 2);
-			indices.set(i_pos + 3, q_pos);
-			indices.set(i_pos + 4, q_pos + 2);
-			indices.set(i_pos + 5, q_pos + 3);
+		// just reserve some space (may not be needed as we are orphaning, but hey ho)
+		if (bdata.vertex_buffer_size_bytes) {
+			glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buffers[i]);
+			glBufferData(GL_ARRAY_BUFFER, bdata.vertex_buffer_size_bytes, nullptr, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-			// we can only use 16 bit indices in GLES2!
-#ifdef DEBUG_ENABLED
-			CRASH_COND((q_pos + 3) > 65535);
-#endif
-		}
+			// pre fill index buffer, the indices never need to change so can be static
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_index_buffers[i]);
 
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, bdata.index_buffer_size_bytes, &indices[0], GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			Vector<uint16_t> indices;
+			indices.resize(bdata.index_buffer_size_units);
 
-	} // only if there is a vertex buffer (batching is on)
+			for (unsigned int q = 0; q < bdata.max_quads; q++) {
+				int i_pos = q * 6; //  6 inds per quad
+				int q_pos = q * 4; // 4 verts per quad
+				indices.set(i_pos, q_pos);
+				indices.set(i_pos + 1, q_pos + 1);
+				indices.set(i_pos + 2, q_pos + 2);
+				indices.set(i_pos + 3, q_pos);
+				indices.set(i_pos + 4, q_pos + 2);
+				indices.set(i_pos + 5, q_pos + 3);
+
+				// we can only use 16 bit indices in GLES2!
+	#ifdef DEBUG_ENABLED
+				CRASH_COND((q_pos + 3) > 65535);
+	#endif
+			}
+
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, bdata.index_buffer_size_bytes, &indices[0], GL_STATIC_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		} // only if there is a vertex buffer (batching is on)
+	}
 	RasterizerGLES2::gl_check_errors();
 }
 

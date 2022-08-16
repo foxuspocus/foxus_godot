@@ -34,13 +34,35 @@
 #include "drivers/gles_common/rasterizer_canvas_batcher.h"
 #include "rasterizer_canvas_base_gles3.h"
 
+class VertexArrays {
+public:
+	inline GLuint* get_vertex_arrays(int index) {
+		return batch_vertex_array[index];
+	}
+	inline size_t size() const {
+		return BUFFER_COUNT;
+	}
+
+	inline GLuint* current_vertex_array() {
+		return batch_vertex_array[current_idx];
+	}
+
+	inline void next() {
+		current_idx = (current_idx + 1) % BUFFER_COUNT;
+	}
+
+private:
+	size_t current_idx = 0;
+	GLuint batch_vertex_array[BUFFER_COUNT][5];
+};
+
 class RasterizerCanvasGLES3 : public RasterizerCanvasBaseGLES3, public RasterizerCanvasBatcher<RasterizerCanvasGLES3, RasterizerStorageGLES3> {
 	friend class RasterizerCanvasBatcher<RasterizerCanvasGLES3, RasterizerStorageGLES3>;
 
 private:
 	struct BatchGLData {
 		// for batching
-		GLuint batch_vertex_array[5];
+		VertexArrays batch_vertex_arrays;
 	} batch_gl_data;
 
 public:

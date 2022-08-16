@@ -1960,12 +1960,16 @@ void RasterizerCanvasGLES3::_batch_upload_buffers() {
 
 	TRACE_EVENT_OPENGL("godot", "batch_upload_buffers");
 
+	batch_gl_data.batch_vertex_arrays.next();
+
 	// noop?
 	if (!bdata.vertices.size()) {
 		return;
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_vertex_buffer);
+	const GLuint gl_vertex_buffer = bdata.gl_buffers.current_vertex_buffer();
+
+	glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buffer);
 
 	// usage flag is a project setting
 	GLenum buffer_usage_flag = GL_DYNAMIC_DRAW;
@@ -1983,27 +1987,27 @@ void RasterizerCanvasGLES3::_batch_upload_buffers() {
 		case RasterizerStorageCommon::FVF_UNBATCHED: // should not happen
 			break;
 		case RasterizerStorageCommon::FVF_REGULAR: { // no change
-			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_regular", "size", bdata.vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_regular", "size", bdata.vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertex) * bdata.vertices.size(), bdata.vertices.get_data(), buffer_usage_flag);
 			break;
 		}
 		case RasterizerStorageCommon::FVF_COLOR: {
-			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_color", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_color", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertexColored) * bdata.unit_vertices.size(), bdata.unit_vertices.get_unit(0), buffer_usage_flag);
 			break;
 		}
 		case RasterizerStorageCommon::FVF_LIGHT_ANGLE: {
-			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_light_angle", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_light_angle", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertexLightAngled) * bdata.unit_vertices.size(), bdata.unit_vertices.get_unit(0), buffer_usage_flag);
 			break;
 		}
 		case RasterizerStorageCommon::FVF_MODULATED: {
-			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_modulated", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_modulated", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertexModulated) * bdata.unit_vertices.size(), bdata.unit_vertices.get_unit(0), buffer_usage_flag);
 			break;
 		}
 		case RasterizerStorageCommon::FVF_LARGE: {
-			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_large", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", bdata.gl_vertex_buffer);
+			TRACE_EVENT_OPENGL("godot", "batch_upload_fvf_large", "size", bdata.unit_vertices.size(), "usage", buffer_usage_flag, "vertex_buffer", gl_vertex_buffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(BatchVertexLarge) * bdata.unit_vertices.size(), bdata.unit_vertices.get_unit(0), buffer_usage_flag);
 			break;
 		}
@@ -2021,7 +2025,7 @@ void RasterizerCanvasGLES3::_batch_render_lines(const Batch &p_batch, Rasterizer
 
 	_bind_canvas_texture(RID(), RID());
 
-	glBindVertexArray(batch_gl_data.batch_vertex_array[0]);
+	glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[0]);
 
 	glDisableVertexAttribArray(VS::ARRAY_COLOR);
 	glVertexAttrib4fv(VS::ARRAY_COLOR, (float *)&p_batch.color);
@@ -2065,19 +2069,19 @@ void RasterizerCanvasGLES3::_batch_render_prepare() {
 			return;
 			break;
 		case RasterizerStorageCommon::FVF_REGULAR: // no change
-			glBindVertexArray(batch_gl_data.batch_vertex_array[0]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[0]);
 			break;
 		case RasterizerStorageCommon::FVF_COLOR:
-			glBindVertexArray(batch_gl_data.batch_vertex_array[1]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[1]);
 			break;
 		case RasterizerStorageCommon::FVF_LIGHT_ANGLE:
-			glBindVertexArray(batch_gl_data.batch_vertex_array[2]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[2]);
 			break;
 		case RasterizerStorageCommon::FVF_MODULATED:
-			glBindVertexArray(batch_gl_data.batch_vertex_array[3]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[3]);
 			break;
 		case RasterizerStorageCommon::FVF_LARGE:
-			glBindVertexArray(batch_gl_data.batch_vertex_array[4]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[4]);
 			break;
 	}
 }
@@ -2103,19 +2107,19 @@ void RasterizerCanvasGLES3::_batch_render_generic(const Batch &p_batch, Rasteriz
 			return;
 			break;
 		case RasterizerStorageCommon::FVF_REGULAR: // no change
-			glBindVertexArray(batch_gl_data.batch_vertex_array[0]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[0]);
 			break;
 		case RasterizerStorageCommon::FVF_COLOR:
-			glBindVertexArray(batch_gl_data.batch_vertex_array[1]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[1]);
 			break;
 		case RasterizerStorageCommon::FVF_LIGHT_ANGLE:
-			glBindVertexArray(batch_gl_data.batch_vertex_array[2]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[2]);
 			break;
 		case RasterizerStorageCommon::FVF_MODULATED:
-			glBindVertexArray(batch_gl_data.batch_vertex_array[3]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[3]);
 			break;
 		case RasterizerStorageCommon::FVF_LARGE:
-			glBindVertexArray(batch_gl_data.batch_vertex_array[4]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.current_vertex_array()[4]);
 			break;
 	}
 
@@ -2201,126 +2205,133 @@ void RasterizerCanvasGLES3::initialize() {
 
 	batch_initialize();
 
-	// just reserve some space (may not be needed as we are orphaning, but hey ho)
-	glGenBuffers(1, &bdata.gl_vertex_buffer);
 
-	if (bdata.vertex_buffer_size_bytes) {
-		glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_vertex_buffer);
-		glBufferData(GL_ARRAY_BUFFER, bdata.vertex_buffer_size_bytes, nullptr, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	GLuint* gl_vertex_buffers = bdata.gl_buffers.get_vertex_buffers();
+	glGenBuffers(bdata.gl_buffers.size(), gl_vertex_buffers);
 
-		// pre fill index buffer, the indices never need to change so can be static
-		glGenBuffers(1, &bdata.gl_index_buffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bdata.gl_index_buffer);
+	GLuint* gl_index_buffers = bdata.gl_buffers.get_index_buffers();
+	glGenBuffers(bdata.gl_buffers.size(), gl_index_buffers);
 
-		Vector<uint16_t> indices;
-		indices.resize(bdata.index_buffer_size_units);
+	for (size_t i = 0; i < bdata.gl_buffers.size(); i++) {
 
-		for (unsigned int q = 0; q < bdata.max_quads; q++) {
-			int i_pos = q * 6; //  6 inds per quad
-			int q_pos = q * 4; // 4 verts per quad
-			indices.set(i_pos, q_pos);
-			indices.set(i_pos + 1, q_pos + 1);
-			indices.set(i_pos + 2, q_pos + 2);
-			indices.set(i_pos + 3, q_pos);
-			indices.set(i_pos + 4, q_pos + 2);
-			indices.set(i_pos + 5, q_pos + 3);
+		// just reserve some space (may not be needed as we are orphaning, but hey ho)
+		if (bdata.vertex_buffer_size_bytes) {
+			glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buffers[i]);
+			glBufferData(GL_ARRAY_BUFFER, bdata.vertex_buffer_size_bytes, nullptr, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-			// we can only use 16 bit indices in GLES2!
+			// pre fill index buffer, the indices never need to change so can be static
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_index_buffers[i]);
+
+			Vector<uint16_t> indices;
+			indices.resize(bdata.index_buffer_size_units);
+
+			for (unsigned int q = 0; q < bdata.max_quads; q++) {
+				int i_pos = q * 6; //  6 inds per quad
+				int q_pos = q * 4; // 4 verts per quad
+				indices.set(i_pos, q_pos);
+				indices.set(i_pos + 1, q_pos + 1);
+				indices.set(i_pos + 2, q_pos + 2);
+				indices.set(i_pos + 3, q_pos);
+				indices.set(i_pos + 4, q_pos + 2);
+				indices.set(i_pos + 5, q_pos + 3);
+
+				// we can only use 16 bit indices in GLES2!
 #ifdef DEBUG_ENABLED
-			CRASH_COND((q_pos + 3) > 65535);
+				CRASH_COND((q_pos + 3) > 65535);
 #endif
-		}
+			}
 
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, bdata.index_buffer_size_bytes, &indices[0], GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, bdata.index_buffer_size_bytes, &indices[0], GL_STATIC_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	} // only if there is a vertex buffer (batching is on)
+		} // only if there is a vertex buffer (batching is on)
 
-	// vertex array objects
-	for (int vao = 0; vao < 5; vao++) {
-		int sizeof_vert;
-		switch (vao) {
-			case 0:
-				sizeof_vert = sizeof(BatchVertex);
-				break;
-			case 1:
-				sizeof_vert = sizeof(BatchVertexColored);
-				break;
-			case 2:
-				sizeof_vert = sizeof(BatchVertexLightAngled);
-				break;
-			case 3:
-				sizeof_vert = sizeof(BatchVertexModulated);
-				break;
-			case 4:
-				sizeof_vert = sizeof(BatchVertexLarge);
-				break;
-		}
+		// vertex array objects
+		for (int vao = 0; vao < 5; vao++) {
+			int sizeof_vert;
+			switch (vao) {
+				case 0:
+					sizeof_vert = sizeof(BatchVertex);
+					break;
+				case 1:
+					sizeof_vert = sizeof(BatchVertexColored);
+					break;
+				case 2:
+					sizeof_vert = sizeof(BatchVertexLightAngled);
+					break;
+				case 3:
+					sizeof_vert = sizeof(BatchVertexModulated);
+					break;
+				case 4:
+					sizeof_vert = sizeof(BatchVertexLarge);
+					break;
+			}
 
-		glGenVertexArrays(1, &batch_gl_data.batch_vertex_array[vao]);
-		glBindVertexArray(batch_gl_data.batch_vertex_array[vao]);
-		glBindBuffer(GL_ARRAY_BUFFER, bdata.gl_vertex_buffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bdata.gl_index_buffer);
+			glGenVertexArrays(1, &batch_gl_data.batch_vertex_arrays.get_vertex_arrays(i)[vao]);
+			glBindVertexArray(batch_gl_data.batch_vertex_arrays.get_vertex_arrays(i)[vao]);
+			glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buffers[i]);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_index_buffers[i]);
 
-		uint64_t pointer = 0;
-		glEnableVertexAttribArray(VS::ARRAY_VERTEX);
-		glVertexAttribPointer(VS::ARRAY_VERTEX, 2, GL_FLOAT, GL_FALSE, sizeof_vert, (const void *)pointer);
+			uint64_t pointer = 0;
+			glEnableVertexAttribArray(VS::ARRAY_VERTEX);
+			glVertexAttribPointer(VS::ARRAY_VERTEX, 2, GL_FLOAT, GL_FALSE, sizeof_vert, (const void *)pointer);
 
-		// always send UVs, even within a texture specified because a shader can still use UVs
-		glEnableVertexAttribArray(VS::ARRAY_TEX_UV);
-		glVertexAttribPointer(VS::ARRAY_TEX_UV, 2, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (2 * 4)));
+			// always send UVs, even within a texture specified because a shader can still use UVs
+			glEnableVertexAttribArray(VS::ARRAY_TEX_UV);
+			glVertexAttribPointer(VS::ARRAY_TEX_UV, 2, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (2 * 4)));
 
-		// optional attributes
-		bool a_color = false;
-		bool a_light_angle = false;
-		bool a_modulate = false;
-		bool a_large = false;
+			// optional attributes
+			bool a_color = false;
+			bool a_light_angle = false;
+			bool a_modulate = false;
+			bool a_large = false;
 
-		switch (vao) {
-			case 0:
-				break;
-			case 1: {
-				a_color = true;
-			} break;
-			case 2: {
-				a_color = true;
-				a_light_angle = true;
-			} break;
-			case 3: {
-				a_color = true;
-				a_light_angle = true;
-				a_modulate = true;
-			} break;
-			case 4: {
-				a_color = true;
-				a_light_angle = true;
-				a_modulate = true;
-				a_large = true;
-			} break;
-		}
+			switch (vao) {
+				case 0:
+					break;
+				case 1: {
+					a_color = true;
+				} break;
+				case 2: {
+					a_color = true;
+					a_light_angle = true;
+				} break;
+				case 3: {
+					a_color = true;
+					a_light_angle = true;
+					a_modulate = true;
+				} break;
+				case 4: {
+					a_color = true;
+					a_light_angle = true;
+					a_modulate = true;
+					a_large = true;
+				} break;
+			}
 
-		if (a_color) {
-			glEnableVertexAttribArray(VS::ARRAY_COLOR);
-			glVertexAttribPointer(VS::ARRAY_COLOR, 4, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (4 * 4)));
-		}
-		if (a_light_angle) {
-			glEnableVertexAttribArray(VS::ARRAY_TANGENT);
-			glVertexAttribPointer(VS::ARRAY_TANGENT, 1, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (8 * 4)));
-		}
-		if (a_modulate) {
-			glEnableVertexAttribArray(VS::ARRAY_TEX_UV2);
-			glVertexAttribPointer(VS::ARRAY_TEX_UV2, 4, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (9 * 4)));
-		}
-		if (a_large) {
-			glEnableVertexAttribArray(VS::ARRAY_BONES);
-			glVertexAttribPointer(VS::ARRAY_BONES, 2, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (13 * 4)));
-			glEnableVertexAttribArray(VS::ARRAY_WEIGHTS);
-			glVertexAttribPointer(VS::ARRAY_WEIGHTS, 4, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (15 * 4)));
-		}
+			if (a_color) {
+				glEnableVertexAttribArray(VS::ARRAY_COLOR);
+				glVertexAttribPointer(VS::ARRAY_COLOR, 4, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (4 * 4)));
+			}
+			if (a_light_angle) {
+				glEnableVertexAttribArray(VS::ARRAY_TANGENT);
+				glVertexAttribPointer(VS::ARRAY_TANGENT, 1, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (8 * 4)));
+			}
+			if (a_modulate) {
+				glEnableVertexAttribArray(VS::ARRAY_TEX_UV2);
+				glVertexAttribPointer(VS::ARRAY_TEX_UV2, 4, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (9 * 4)));
+			}
+			if (a_large) {
+				glEnableVertexAttribArray(VS::ARRAY_BONES);
+				glVertexAttribPointer(VS::ARRAY_BONES, 2, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (13 * 4)));
+				glEnableVertexAttribArray(VS::ARRAY_WEIGHTS);
+				glVertexAttribPointer(VS::ARRAY_WEIGHTS, 4, GL_FLOAT, GL_FALSE, sizeof_vert, CAST_INT_TO_UCHAR_PTR(pointer + (15 * 4)));
+			}
 
-		glBindVertexArray(0);
-	} // for vao
+			glBindVertexArray(0);
+		} // for vao
+	}
 
 	// deal with ninepatch mode option
 	if (bdata.settings_ninepatch_mode == 1) {

@@ -60,6 +60,48 @@
 	T_PREAMBLE          \
 	RET_T C_PREAMBLE
 
+#define BUFFER_COUNT 200
+
+class Buffers {
+public:
+	inline unsigned int* get_vertex_buffers() {
+		return vertex_buffers;
+	}
+
+	inline unsigned int* get_index_buffers() {
+		return index_buffers;
+	}
+
+	inline size_t size() const {
+		return BUFFER_COUNT;
+	}
+
+	inline void reset() {
+		for (size_t i = 0; i < size(); i++) {
+			vertex_buffers[i] = 0;
+			index_buffers[i] = 0;
+			current_idx = 0;
+		}
+	}
+
+	inline unsigned int current_vertex_buffer() const {
+		return vertex_buffers[current_idx];
+	}
+
+	inline unsigned int current_index_buffer() const {
+		return index_buffers[current_idx];
+	}
+
+	inline void next() {
+		current_idx = (current_idx + 1) % BUFFER_COUNT;
+	}
+
+private:
+	size_t current_idx = 0;
+	unsigned int vertex_buffers[BUFFER_COUNT];
+	unsigned int index_buffers[BUFFER_COUNT];
+};
+
 template <class T, typename T_STORAGE>
 class RasterizerCanvasBatcher {
 public:
@@ -290,8 +332,7 @@ public:
 			reset_flush();
 			reset_joined_item();
 
-			gl_vertex_buffer = 0;
-			gl_index_buffer = 0;
+			gl_buffers.reset();
 			max_quads = 0;
 			vertex_buffer_size_units = 0;
 			vertex_buffer_size_bytes = 0;
@@ -358,8 +399,7 @@ public:
 			fvf = RasterizerStorageCommon::FVF_REGULAR;
 		}
 
-		unsigned int gl_vertex_buffer;
-		unsigned int gl_index_buffer;
+		Buffers gl_buffers;
 
 		uint32_t max_quads;
 		uint32_t vertex_buffer_size_units;
@@ -2468,6 +2508,8 @@ PREAMBLE(bool)::prefill_joined_item(FillState &r_fill_state, int &r_command_star
 PREAMBLE(void)::flush_render_batches(RasterizerCanvas::Item *p_first_item, RasterizerCanvas::Item *p_current_clip, bool &r_reclip, typename T_STORAGE::Material *p_material, uint32_t p_sequence_batch_type_flags) {
 
 	TRACE_EVENT("godot", "flush_render_batches");
+
+	bdata.gl_buffers.next();
 
 	// some heuristic to decide whether to use colored verts.
 	// feel free to tweak this.
