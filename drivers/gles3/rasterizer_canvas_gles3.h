@@ -34,35 +34,132 @@
 #include "drivers/gles_common/rasterizer_canvas_batcher.h"
 #include "rasterizer_canvas_base_gles3.h"
 
-class VertexArrays {
-public:
-	inline GLuint* get_vertex_arrays(int index) {
-		return batch_vertex_array[index];
-	}
-	inline size_t size() const {
-		return BUFFER_COUNT;
-	}
-
-	inline GLuint* current_vertex_array() {
-		return batch_vertex_array[current_idx];
-	}
-
-	inline void next() {
-		current_idx = (current_idx + 1) % BUFFER_COUNT;
-	}
-
-private:
-	size_t current_idx = 0;
-	GLuint batch_vertex_array[BUFFER_COUNT][5];
-};
+#include "profiler.h"
 
 class RasterizerCanvasGLES3 : public RasterizerCanvasBaseGLES3, public RasterizerCanvasBatcher<RasterizerCanvasGLES3, RasterizerStorageGLES3> {
 	friend class RasterizerCanvasBatcher<RasterizerCanvasGLES3, RasterizerStorageGLES3>;
+	friend class Buffers;
 
 private:
-	struct BatchGLData {
-		// for batching
-		VertexArrays batch_vertex_arrays;
+
+	struct VAOArray {
+		GLuint array[5];
+	};
+
+	// for batching
+	class BatchGLData {
+	public:
+		BatchGLData(RasterizerCanvasGLES3& rasterizer) : rasterizer(rasterizer) {}
+
+		inline size_t size() const {
+			return current_size;
+		}
+
+		inline void request(size_t new_size) {
+			// #1 no hysteresis
+			//resize(new_size);
+
+			// #2 no hystersis, no decrement
+			//if (new_size > current_size) {
+			//	resize(new_size);
+			//}
+
+			// #3 hysteresis, no decrement
+			//const float t = 0.5;
+			//hysteresis = hysteresis * (1.0f - t) + new_size * t;
+			//new_size = (size_t)hysteresis;
+			//if (new_size > current_size) {
+			//	resize(new_size);
+			//}
+
+			// #4 hysteresis, decrement
+			//const float t = 0.01;
+			//hysteresis = hysteresis * (1.0f - t) + new_size * t;
+			//new_size = (size_t)hysteresis;
+			//resize(new_size);
+
+			// #5 hysteresis, decrement, instantincrement
+			if (new_size < current_size) {
+				const float t = 0.01;
+				hysteresis = hysteresis * (1.0f - t) + new_size * t;
+				new_size = (size_t)hysteresis;
+			} else {
+				hysteresis = (float)new_size;
+			}
+			resize(new_size);
+		}
+
+		inline void resize(size_t new_size) {
+			if (new_size <= 0) {
+				new_size = 1;
+			}
+			int max_size_diff = (int)new_size - vertex_buffers.size();
+			if (max_size_diff > 0) {
+				vertex_buffers.request_with_grow(max_size_diff);
+				index_buffers.request_with_grow(max_size_diff);
+				vertex_arrays.request_with_grow(max_size_diff);
+			}
+			int size_diff = (int)new_size - (int)current_size;
+			if (size_diff > 0) {
+				glGenBuffers(size_diff, &vertex_buffers[current_size]);
+				glGenBuffers(size_diff, &index_buffers[current_size]);
+				for (int i = 0; i < size_diff; i++) {
+					glGenVertexArrays(5, vertex_arrays[current_size + i].array);
+					rasterizer.initialize_buffer(vertex_buffers[current_size + i], index_buffers[current_size + i], vertex_arrays[current_size + i].array);
+				}
+			} else if (size_diff < 0) {
+				glDeleteBuffers(-size_diff, &vertex_buffers[current_size + size_diff]);
+				glDeleteBuffers(-size_diff, &index_buffers[current_size + size_diff]);
+				for (int i = 0; i > size_diff; i--) {
+					glDeleteVertexArrays(5, vertex_arrays[current_size + i - 1].array);
+				}
+			}
+			current_size = new_size;
+			if (current_idx >= current_size) {
+				current_idx = 0;
+			}
+		}
+
+		inline void reset() {
+			resize(1);
+		}
+
+		inline unsigned int current_vertex_buffer() const {
+			return vertex_buffers[current_idx];
+		}
+
+		inline unsigned int current_index_buffer() const {
+			return index_buffers[current_idx];
+		}
+
+		inline GLuint* current_vertex_array() {
+			return vertex_arrays[current_idx].array;
+		}
+
+		inline void adapt() {
+			request(new_size);
+			new_size = 0;
+			TRACE_COUNTER("godot", "canvas_gl_buffers", current_size);
+		}
+
+		inline void next() {
+			current_idx = (current_idx + 1) % current_size;
+			new_size++;
+		}
+
+		inline size_t current_index() {
+			return current_idx;
+		}
+
+	private:
+		float hysteresis = 0;
+		size_t current_idx = 0;
+		size_t current_size = 0;
+		size_t new_size = 0;
+		RasterizerArray<unsigned int> vertex_buffers;
+		RasterizerArray<unsigned int> index_buffers;
+		RasterizerArray<VAOArray> vertex_arrays;
+		RasterizerCanvasGLES3& rasterizer;
 	} batch_gl_data;
 
 public:
@@ -71,6 +168,7 @@ public:
 	virtual void canvas_render_items(Item *p_item_list, int p_z, const Color &p_modulate, Light *p_light, const Transform2D &p_base_transform);
 	virtual void canvas_begin();
 	virtual void canvas_end();
+	void canvas_adapt();
 
 private:
 	// legacy codepath .. to remove after testing
@@ -91,6 +189,8 @@ private:
 	// funcs used from rasterizer_canvas_batcher template
 	void gl_enable_scissor(int p_x, int p_y, int p_width, int p_height) const;
 	void gl_disable_scissor() const;
+
+	void initialize_buffer(GLuint vertex_buffer, GLuint index_buffer, GLuint vertex_array[5]);
 
 public:
 	void initialize();
